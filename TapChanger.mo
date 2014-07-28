@@ -14,11 +14,11 @@ package TapChanger
     parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference";
     parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
     parameter Boolean InitByVoltage=false "Initialize to V=Vref?";
-    Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
-    Modelica.SIunits.Time upcounter(start=-10, fixed=true);
-    Modelica.SIunits.Time downcounter(start=-10, fixed=true);
-    Modelica.SIunits.Time Td;
-    Modelica.SIunits.Time Tm;
+     parameter Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
+    inner Modelica.SIunits.Time upcounter(start=-10, fixed=true);
+    inner Modelica.SIunits.Time downcounter(start=-10, fixed=true);
+     Modelica.SIunits.Time Td;
+     Modelica.SIunits.Time Tm;
 
     parameter Real udev=0.1 "Transformer Ratio";
 
@@ -40,7 +40,9 @@ package TapChanger
     end Wait1;
     Wait1 wait1 annotation (Placement(transformation(extent={{-10,60},{10,80}})));
     model CountDown1
-
+       outer Modelica.SIunits.Time downcounter;
+    equation
+      downcounter = sample(time);
       annotation (
         Icon(graphics={Text(
               extent={{-100,100},{100,-100}},
@@ -83,7 +85,9 @@ package TapChanger
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
               -100},{100,100}}), graphics));
     model CountUp1
-
+      outer Modelica.SIunits.Time upcounter;
+    equation
+      upcounter = sample(time);
       annotation (
         Icon(graphics={Text(
               extent={{-100,100},{100,-100}},
@@ -123,8 +127,8 @@ package TapChanger
 
     transition(
       countDown1,
-      actionDown1,(time - downcounter) > Td,
-      immediate=true,
+      actionDown1,sample(time) - downcounter > Td,
+      immediate=false,
       reset=true,
       synchronize=false,
       priority=2) annotation (Line(
@@ -133,7 +137,7 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,4},{-4,10}},
+        extent={{-4,-4},{-4,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -158,18 +162,19 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       actionDown1,
-      wait1,(time - downcounter) > (Td + Tm),immediate=true,reset=true,
+      wait1,(sample(time) - downcounter) > (Td + Tm),immediate=false,
+                                                                    reset=true,
       synchronize=false,priority=1) annotation (Line(
         points={{32,-22},{32,-40},{8,-40},{8,58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{4,-4},{4,-10}},
+        extent={{-4,-4},{-4,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
-        horizontalAlignment=TextAlignment.Left));
+        horizontalAlignment=TextAlignment.Right));
     transition(
       wait1,
       countUp1,(udev < -DB/2) and (tappos < maxtap),
@@ -187,23 +192,24 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       countUp1,
-      actionUp1,(time - upcounter) > Td,
-      priority=2,immediate=true,reset=true,synchronize=false)
+      actionUp1,(sample(time) - upcounter) > Td,
+      priority=2,immediate=false,
+                                reset=true,synchronize=false)
                   annotation (Line(
         points={{-32,18},{-32,2}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,4},{-4,10}},
+        extent={{-4,-4},{-4,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
       countUp1,
-      wait1,
-      not ((udev < -DB/2) and (tappos < maxtap))) annotation (Line(
+      wait1,not ((udev < -DB/2) and (tappos < maxtap)),immediate=true,reset=true,
+      synchronize=false,priority=1)               annotation (Line(
         points={{-44,28},{-60,28},{-60,76},{-12,76}},
         color={175,175,175},
         thickness=0.25,
@@ -230,19 +236,19 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       actionUp1,
-      wait1,(time - upcounter) > (Td + Tm),immediate=true,reset=true,
-      synchronize=false,priority=1)
-                                  annotation (Line(
+      wait1,(sample(time) - upcounter) > (Td + Tm),immediate=false,
+                                                                  reset=true,synchronize=false,
+      priority=1)                 annotation (Line(
         points={{-32,-22},{-32,-34},{-32,-42},{-4,-42},{-4,58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{4,-4},{4,-10}},
+        extent={{-4,-4},{-4,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
-        horizontalAlignment=TextAlignment.Left));
+        horizontalAlignment=TextAlignment.Right));
     initialState(wait1) annotation (Line(
         points={{0,82},{0,96},{8,96}},
         color={175,175,175},
@@ -252,24 +258,24 @@ package TapChanger
   end TCULState;
 
   model TCULStateTest
-    parameter Integer method=1 "Method number";
-    parameter Real n=1 "Transformer Ratio";
-    parameter Real stepsize=0.01 "Step Size";
-    parameter Integer mintap=-12 "Minimum tap step";
-    parameter Integer maxtap=12 "Maximum tap step";
-    parameter Modelica.SIunits.Duration Tm0=10 "Mechanical Time Delay";
-    parameter Modelica.SIunits.Duration Td0=20 "Controller Time Delay 1";
-    parameter Modelica.SIunits.Duration Td1=20 "Controller Time Delay 2";
-    parameter Modelica.SIunits.PerUnit DB=0.03
-      "TCUL Voltage Deadband (double-sided)";
-    parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference";
-    parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
-    parameter Boolean InitByVoltage=false "Initialize to V=Vref?";
-    Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
-    Modelica.SIunits.Time upcounter(start=-10, fixed=true);
-    Modelica.SIunits.Time downcounter(start=-10, fixed=true);
-    Modelica.SIunits.Time Td;
-    Modelica.SIunits.Time Tm;
+  //   parameter Integer method=1 "Method number";
+  //   parameter Real n=1 "Transformer Ratio";
+  //   parameter Real stepsize=0.01 "Step Size";
+  //   parameter Integer mintap=-12 "Minimum tap step";
+  //   parameter Integer maxtap=12 "Maximum tap step";
+  //   parameter Modelica.SIunits.Duration Tm0=10 "Mechanical Time Delay";
+  //   parameter Modelica.SIunits.Duration Td0=20 "Controller Time Delay 1";
+  //   parameter Modelica.SIunits.Duration Td1=20 "Controller Time Delay 2";
+  //   parameter Modelica.SIunits.PerUnit DB=0.03
+  //     "TCUL Voltage Deadband (double-sided)";
+  //   parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference";
+  //   parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
+  //   parameter Boolean InitByVoltage=false "Initialize to V=Vref?";
+  //   Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
+  //   Modelica.SIunits.Time upcounter(start=-10, fixed=true);
+  //   Modelica.SIunits.Time downcounter(start=-10, fixed=true);
+  //   Modelica.SIunits.Time Td;
+  //   Modelica.SIunits.Time Tm;
 
     parameter Real udev=0.1 "Transformer Ratio";
 
@@ -374,7 +380,7 @@ package TapChanger
 
     transition(
       countDown1,
-      actionDown1,time > 3,
+      actionDown1,sample(time) > 3,
       immediate=true,
       reset=true,
       synchronize=false,
@@ -391,7 +397,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       countDown1,
-      wait1,time > 2,
+      wait1,sample(time) > 2,
       priority=1,
       immediate=true,
       reset=true,
@@ -408,7 +414,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       actionDown1,
-      wait1,time > 4,immediate=true,reset=true,synchronize=false,priority=1)
+      wait1,sample(time) > 4,immediate=true,reset=true,synchronize=false,priority=1)
                                     annotation (Line(
         points={{32,-22},{34,-40},{8,-40},{8,58}},
         color={175,175,175},
@@ -422,7 +428,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       wait1,
-      countUp1,time > 5,
+      countUp1,sample(time) > 5,
       priority=2,immediate=true,reset=true,synchronize=false)
                   annotation (Line(
         points={{-12,68},{-32,68},{-32,42}},
@@ -437,7 +443,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       countUp1,
-      actionUp1,time > 6,
+      actionUp1,sample(time) > 6,
       priority=2,immediate=true,reset=true,synchronize=false)
                   annotation (Line(
         points={{-32,18},{-32,2}},
@@ -452,7 +458,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       countUp1,
-      wait1,time > 7,immediate=true,reset=true,synchronize=false,priority=1)
+      wait1,sample(time) > 7,immediate=true,reset=true,synchronize=false,priority=1)
                                                   annotation (Line(
         points={{-44,28},{-60,28},{-60,76},{-12,76}},
         color={175,175,175},
@@ -466,7 +472,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       wait1,
-      countDown1,time > 1,immediate=true,reset=true,synchronize=false,priority=1)
+      countDown1,sample(time) > 1,immediate=true,reset=true,synchronize=false,priority=1)
                                        annotation (Line(
         points={{12,68},{32,68},{32,42}},
         color={175,175,175},
@@ -480,7 +486,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       actionUp1,
-      wait1,time > 8,immediate=true,reset=true,synchronize=false,priority=1)
+      wait1,sample(time) > 8,immediate=true,reset=true,synchronize=false,priority=1)
                                   annotation (Line(
         points={{-32,-22},{-32,-34},{-32,-42},{-4,-42},{-4,58}},
         color={175,175,175},
