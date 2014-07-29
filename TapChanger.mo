@@ -274,6 +274,280 @@ package TapChanger
               -100},{100,100}}), graphics));
   end TCULState;
 
+  model TCULStateBroken
+    parameter Integer method=1 "Method number";
+    parameter Real n=1 "Transformer Ratio";
+    parameter Real stepsize=0.01 "Step Size";
+    parameter Integer mintap=-12 "Minimum tap step";
+    parameter Integer maxtap=12 "Maximum tap step";
+    parameter Modelica.SIunits.Duration Tm0=10 "Mechanical Time Delay";
+    parameter Modelica.SIunits.Duration Td0=20 "Controller Time Delay 1";
+    parameter Modelica.SIunits.Duration Td1=20 "Controller Time Delay 2";
+    parameter Modelica.SIunits.PerUnit DB=0.03
+      "TCUL Voltage Deadband (double-sided)";
+    parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference";
+    parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
+    parameter Boolean InitByVoltage=false "Initialize to V=Vref?";
+     parameter Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
+    inner discrete Modelica.SIunits.Time offset(start=0);
+     Modelica.SIunits.Time Td;
+     Modelica.SIunits.Time Tm;
+
+    parameter Real udev=0.1 "Transformer Ratio";
+
+    model Wait1
+
+      annotation (
+        Icon(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%name")}),
+        Diagram(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%stateName",
+              fontSize=10)}),
+        __Dymola_state=true,
+        showDiagram=true,
+        singleInstance=true);
+    end Wait1;
+    Wait1 wait1 annotation (Placement(transformation(extent={{-10,60},{10,80}})));
+    model CountDown1
+       outer Modelica.SIunits.Time offset;
+       Integer tmp(start=0);
+    equation
+      tmp = previous(tmp)+1;
+      if tmp == 1 then
+        /* we need to substract the interval time 
+     because of delayed trigger */
+        offset = sample(time) - interval(offset);
+      else
+        offset = previous(offset);
+      end if
+      annotation (
+        Icon(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%name")}),
+        Diagram(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%stateText",
+              fontSize=10)}),
+        __Dymola_state=true,
+        showDiagram=true,
+        singleInstance=true);
+
+    end CountDown1;
+
+    model ActionDown1
+
+      annotation (
+        Icon(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%name")}),
+        Diagram(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%stateName",
+              fontSize=10)}),
+        __Dymola_state=true,
+        showDiagram=true,
+        singleInstance=true);
+    end ActionDown1;
+    ActionDown1 actionDown1
+      annotation (Placement(transformation(extent={{22,-76},{42,-56}})));
+    CountDown1 countDown1
+      annotation (Placement(transformation(extent={{16,2},{66,38}})));
+    CountUp1 countUp1
+      annotation (Placement(transformation(extent={{-58,2},{-14,38}})));
+    ActionUp1 actionUp1
+      annotation (Placement(transformation(extent={{-44,-80},{-24,-60}})));
+    model CountUp1
+       outer Modelica.SIunits.Time offset;
+       Integer tmp(start=0);
+    equation
+       tmp = previous(tmp) + 1;
+       if tmp == 1 then
+         offset = sample(time) - interval(offset);
+       else
+         offset = previous(offset);
+       end if
+      annotation (
+        Icon(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%name")}),
+        Diagram(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%stateText",
+              fontSize=10)}),
+        __Dymola_state=true,
+        showDiagram=true,
+        singleInstance=true);
+    end CountUp1;
+
+    model ActionUp1
+
+      annotation (
+        Icon(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%name")}),
+        Diagram(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%stateName",
+              fontSize=10)}),
+        __Dymola_state=true,
+        showDiagram=true,
+        singleInstance=true);
+    end ActionUp1;
+  equation
+    if method == 1 then
+      Td = Td0;
+      Tm = Tm0;
+    else
+      Td = Td0;
+      Tm = Tm0;
+    end if;
+
+    transition(
+      countDown1,
+      actionDown1,sample(time) - offset > Td,
+      immediate=false,
+      reset=true,
+      synchronize=false,
+      priority=2) annotation (Line(
+        points={{41,0},{32,-54}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{54,-8},{54,-14}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    transition(
+      countDown1,
+      wait1,
+      not ((udev > DB/2) and (tappos > mintap)),
+      priority=1,
+      immediate=true,
+      reset=true,
+      synchronize=false) annotation (Line(
+        points={{68,20},{94,20},{94,76},{82,76},{70,76},{12,76}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{4,4},{4,10}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Left));
+    transition(
+      actionDown1,
+      wait1,(sample(time) - offset) > (Td + Tm),     immediate=false,
+                                                                    reset=true,
+      synchronize=false,priority=1) annotation (Line(
+        points={{34,-78},{34,-92},{10,-92},{8,58}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{-4,-4},{-4,-10}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    transition(
+      wait1,
+      countUp1,(udev < -DB/2) and (tappos < maxtap),
+      priority=2,immediate=true,reset=true,synchronize=false)
+                  annotation (Line(
+        points={{-12,68},{-36,68},{-36,40}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{-6,14},{-6,20}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    transition(
+      countUp1,
+      actionUp1,(sample(time) - offset) > Td,
+      priority=2,immediate=false,
+                                reset=true,synchronize=false)
+                  annotation (Line(
+        points={{-36,0},{-34,-58}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{-4,-4},{-4,-10}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    transition(
+      countUp1,
+      wait1,not ((udev < -DB/2) and (tappos < maxtap)),immediate=true,reset=true,
+      synchronize=false,priority=1)               annotation (Line(
+        points={{-60,20},{-96,20},{-96,76},{-12,76}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{-4,4},{-4,10}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    transition(
+      wait1,
+      countDown1,(udev > DB/2) and (tappos > mintap),immediate=true,reset=true,
+      synchronize=false,priority=1)    annotation (Line(
+        points={{12,68},{44,68},{41,40}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{72,14},{72,20}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    transition(
+      actionUp1,
+      wait1,(sample(time) - offset) > (Td + Tm),   immediate=false,
+                                                                  reset=true,synchronize=false,
+      priority=1)                 annotation (Line(
+        points={{-34,-82},{-34,-90},{-34,-96},{-4,-96},{-4,58}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{-4,-4},{-4,-10}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    initialState(wait1) annotation (Line(
+        points={{0,82},{0,96},{8,96}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier,
+        arrow={Arrow.Filled,Arrow.None}));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}), graphics));
+  end TCULStateBroken;
+
   model TCULStateTest
   //   parameter Integer method=1 "Method number";
   //   parameter Real n=1 "Transformer Ratio";
