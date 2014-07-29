@@ -14,12 +14,11 @@ package TapChanger
     parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference";
     parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
     parameter Boolean InitByVoltage=false "Initialize to V=Vref?";
-     parameter Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
+    inner Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
     inner Modelica.SIunits.Time offset(start=0);
      Modelica.SIunits.Time Td;
      Modelica.SIunits.Time Tm;
-
-    parameter Real udev=-0.1 "Transformer Ratio";
+    parameter Real udev=0.1 "Transformer Ratio";
 
     model Wait
 
@@ -66,7 +65,7 @@ package TapChanger
 
     end DownCount;
 
-    model DownAction
+    model DownMechDelay
 
       annotation (
         Icon(graphics={Text(
@@ -81,15 +80,34 @@ package TapChanger
         __Dymola_state=true,
         showDiagram=true,
         singleInstance=true);
+    end DownMechDelay;
+
+    model DownAction
+       outer output Real tappos;
+    equation
+        tappos = previous(tappos) - 1;
+      annotation (
+        Icon(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%name")}),
+        Diagram(graphics={Text(
+              extent={{-100,100},{100,-100}},
+              lineColor={0,0,0},
+              textString="%stateText",
+              fontSize=10)}),
+        __Dymola_state=true,
+        showDiagram=true,
+        singleInstance=true);
     end DownAction;
     DownAction downAction
-      annotation (Placement(transformation(extent={{22,-76},{42,-56}})));
+      annotation (Placement(transformation(extent={{24,-82},{64,-62}})));
     DownCount downCount
-      annotation (Placement(transformation(extent={{16,-10},{66,38}})));
+      annotation (Placement(transformation(extent={{16,-10},{74,38}})));
     UpCount upCount
       annotation (Placement(transformation(extent={{-58,2},{-14,38}})));
     UpAction upAction
-      annotation (Placement(transformation(extent={{-44,-80},{-24,-60}})));
+      annotation (Placement(transformation(extent={{-46,-40},{-26,-20}})));
     model UpCount
       outer output Modelica.SIunits.Time offset;
       Integer tmp(start=0);
@@ -131,6 +149,8 @@ package TapChanger
         showDiagram=true,
         singleInstance=true);
     end UpAction;
+    DownMechDelay downMechDelay
+      annotation (Placement(transformation(extent={{34,-44},{54,-24}})));
   equation
     if method == 1 then
       Td = Td0;
@@ -142,58 +162,22 @@ package TapChanger
 
     transition(
       downCount,
-      downAction,
-      sample(time) - offset > Td,
-      immediate=false,
-      reset=true,
-      synchronize=false,
-      priority=2) annotation (Line(
-        points={{41,-12},{32,-54}},
-        color={175,175,175},
-        thickness=0.25,
-        smooth=Smooth.Bezier), Text(
-        string="%condition",
-        extent={{54,-8},{54,-14}},
-        lineColor={95,95,95},
-        fontSize=10,
-        textStyle={TextStyle.Bold},
-        horizontalAlignment=TextAlignment.Right));
-    transition(
-      downCount,
       wait,
       not ((udev > DB/2) and (tappos > mintap)),
       priority=1,
       immediate=true,
       reset=true,
       synchronize=false) annotation (Line(
-        points={{68,14},{94,20},{94,76},{82,76},{70,76},{12,76}},
+        points={{76,14},{94,14},{94,74},{82,76},{70,76},{12,76}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{4,4},{4,10}},
+        extent={{18,8},{18,14}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Left));
-    transition(
-      downAction,
-      wait,
-      (sample(time) - offset) > (Td + Tm),
-      immediate=false,
-      reset=true,
-      synchronize=false,
-      priority=1) annotation (Line(
-        points={{34,-78},{34,-92},{10,-92},{8,58}},
-        color={175,175,175},
-        thickness=0.25,
-        smooth=Smooth.Bezier), Text(
-        string="%condition",
-        extent={{-4,-4},{-4,-10}},
-        lineColor={95,95,95},
-        fontSize=10,
-        textStyle={TextStyle.Bold},
-        horizontalAlignment=TextAlignment.Right));
     transition(
       wait,
       upCount,
@@ -220,7 +204,7 @@ package TapChanger
       immediate=false,
       reset=true,
       synchronize=false) annotation (Line(
-        points={{-36,0},{-34,-58}},
+        points={{-36,0},{-36,-18}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -256,12 +240,12 @@ package TapChanger
       reset=true,
       synchronize=false,
       priority=1) annotation (Line(
-        points={{12,68},{44,68},{41,40}},
+        points={{12,68},{44,68},{45,40}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{72,14},{72,20}},
+        extent={{28,12},{28,18}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -274,7 +258,7 @@ package TapChanger
       reset=true,
       synchronize=false,
       priority=1) annotation (Line(
-        points={{-34,-82},{-34,-90},{-34,-96},{-4,-96},{-4,58}},
+        points={{-36,-42},{-34,-90},{-34,-96},{-4,-96},{-4,58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -292,6 +276,36 @@ package TapChanger
         arrow={Arrow.Filled,Arrow.None}));
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
               -100},{100,100}}), graphics));
+    transition(
+      downCount,
+      downMechDelay,
+      sample(time) - offset > Td,
+      immediate=false,
+      priority=2) annotation (Line(
+        points={{42,-12},{42,-22}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{-4,-4},{-4,-10}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    transition(
+      downMechDelay,
+      downAction,(sample(time) - offset) > (Td + Tm),immediate=false,reset=true,
+      synchronize=false,priority=1)        annotation (Line(
+        points={{44,-46},{44,-60}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{-4,-4},{-4,-10}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
   end TCULState;
 
   model TCULStateTest
