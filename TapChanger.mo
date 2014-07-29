@@ -25,7 +25,7 @@ package TapChanger
     Modelica.SIunits.Time Td "Delay time before tapping is triggered";
     Modelica.SIunits.Time Tm "Delay time for the mechanical tapping";
     Modelica.SIunits.PerUnit Vdev "Voltage deviation";
-    Boolean blocked=u2 < Vblock "Tap locked ?";
+    Boolean blocked=sample(u2) < Vblock "Tap locked ?";
 
     model Wait
 
@@ -180,10 +180,10 @@ package TapChanger
     Vdev = u1 - Vref;
     tappos = (y - 1)/stepsize + 0.5;  // convert to nearest integer
     y1 = tappos_offset;
-    y2 = 0 "Currently y2 is not in use and set to zero";
+    y2 = 1*time "Currently y2 is not in use and set to zero";
     transition(
       downCount,
-      wait,Vdev <= DB/2,
+      wait,sample(Vdev) <= DB/2,
       priority=1,
       immediate=true,
       reset=true,
@@ -200,7 +200,8 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       wait,
-      upCount,(Vdev < -DB/2) and (previous(tappos) + 1 < maxtap) and not blocked,
+      upCount,(sample(Vdev) < -DB/2) and (previous(tappos) + 1 < maxtap) and not
+      blocked,
       priority=2,
       immediate=true,
       reset=true,
@@ -217,7 +218,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       upCount,
-      wait,(Vdev >= -DB/2) or blocked,
+      wait,(sample(Vdev) >= -DB/2) or blocked,
       immediate=true,
       reset=true,
       synchronize=false,
@@ -234,7 +235,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       wait,
-      downCount,(Vdev > DB/2) and (previous(tappos) - 1 > mintap),
+      downCount,(sample(Vdev) > DB/2) and (previous(tappos) - 1 > mintap),
       immediate=true,
       reset=true,
       synchronize=false,
@@ -372,4 +373,41 @@ package TapChanger
 
 
   annotation (uses(Modelica(version="3.2.1")));
+  model Test
+    TCULState tCULState
+      annotation (Placement(transformation(extent={{-2,-2},{18,18}})));
+    Modelica.Blocks.Sources.Sine Sine(
+      amplitude=0.05,
+      freqHz=1/100,
+      offset=1)
+      annotation (Placement(transformation(extent={{-62,10},{-42,30}})));
+    Modelica.Blocks.MathInteger.Product
+                        product(nu=2)
+      annotation (Placement(transformation(extent={{48,2},{60,14}})));
+    Modelica.Blocks.Interaction.Show.IntegerValue showValue1
+      annotation (Placement(transformation(extent={{74,-2},{94,18}})));
+  equation
+    connect(Sine.y, tCULState.u1) annotation (Line(
+        points={{-41,20},{-16,20},{-16,14},{-4,14}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(Sine.y, tCULState.u2) annotation (Line(
+        points={{-41,20},{-24,20},{-24,2},{-4,2}},
+        color={0,0,127},
+        smooth=Smooth.None));
+    connect(product.y,showValue1. numberPort) annotation (Line(
+        points={{60.9,8},{72.5,8}},
+        color={255,127,0},
+        smooth=Smooth.None));
+    connect(tCULState.y1, product.u[1]) annotation (Line(
+        points={{19,14},{38.5,14},{38.5,10.1},{48,10.1}},
+        color={255,127,0},
+        smooth=Smooth.None));
+    connect(tCULState.y2, product.u[2]) annotation (Line(
+        points={{19,2},{34,2},{34,5.9},{48,5.9}},
+        color={255,127,0},
+        smooth=Smooth.None));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
+              -100,-100},{100,100}}), graphics));
+  end Test;
 end TapChanger;
