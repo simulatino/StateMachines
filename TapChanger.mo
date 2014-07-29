@@ -21,7 +21,7 @@ package TapChanger
 
     parameter Real udev=0.1 "Transformer Ratio";
 
-    model Wait1
+    model Wait
 
       annotation (
         Icon(graphics={Text(
@@ -36,9 +36,9 @@ package TapChanger
         __Dymola_state=true,
         showDiagram=true,
         singleInstance=true);
-    end Wait1;
-    Wait1 wait1 annotation (Placement(transformation(extent={{-10,60},{10,80}})));
-    model CountDown1
+    end Wait;
+    Wait wait annotation (Placement(transformation(extent={{-10,60},{10,80}})));
+    model DownCount
        outer Modelica.SIunits.Time offset;
        Integer tmp(start=0);
     equation
@@ -64,9 +64,9 @@ package TapChanger
         showDiagram=true,
         singleInstance=true);
 
-    end CountDown1;
+    end DownCount;
 
-    model ActionDown1
+    model DownAction
 
       annotation (
         Icon(graphics={Text(
@@ -81,16 +81,16 @@ package TapChanger
         __Dymola_state=true,
         showDiagram=true,
         singleInstance=true);
-    end ActionDown1;
-    ActionDown1 actionDown1
+    end DownAction;
+    DownAction downAction
       annotation (Placement(transformation(extent={{22,-76},{42,-56}})));
-    CountDown1 countDown1
-      annotation (Placement(transformation(extent={{16,2},{66,38}})));
-    CountUp1 countUp1
+    DownCount downCount
+      annotation (Placement(transformation(extent={{16,-10},{66,38}})));
+    UpCount upCount
       annotation (Placement(transformation(extent={{-58,2},{-14,38}})));
-    ActionUp1 actionUp1
+    UpAction upAction
       annotation (Placement(transformation(extent={{-44,-80},{-24,-60}})));
-    model CountUp1
+    model UpCount
       outer output Modelica.SIunits.Time offset;
       Integer tmp(start=0);
     equation
@@ -113,9 +113,9 @@ package TapChanger
         __Dymola_state=true,
         showDiagram=true,
         singleInstance=true);
-    end CountUp1;
+    end UpCount;
 
-    model ActionUp1
+    model UpAction
 
       annotation (
         Icon(graphics={Text(
@@ -130,7 +130,7 @@ package TapChanger
         __Dymola_state=true,
         showDiagram=true,
         singleInstance=true);
-    end ActionUp1;
+    end UpAction;
   equation
     if method == 1 then
       Td = Td0;
@@ -141,13 +141,14 @@ package TapChanger
     end if;
 
     transition(
-      countDown1,
-      actionDown1,sample(time) - offset > Td,
-      immediate=false,
-      reset=true,
-      synchronize=false,
-      priority=2) annotation (Line(
-        points={{41,0},{32,-54}},
+        downCount,
+        downAction,
+        sample(time) - offset > Td,
+        immediate=false,
+        reset=true,
+        synchronize=false,
+        priority=2) annotation (Line(
+        points={{41,-12},{32,-54}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -158,14 +159,14 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-      countDown1,
-      wait1,
-      not ((udev > DB/2) and (tappos > mintap)),
-      priority=1,
-      immediate=true,
-      reset=true,
-      synchronize=false) annotation (Line(
-        points={{68,20},{94,20},{94,76},{82,76},{70,76},{12,76}},
+        downCount,
+        wait,
+        not ((udev > DB/2) and (tappos > mintap)),
+        priority=1,
+        immediate=true,
+        reset=true,
+        synchronize=false) annotation (Line(
+        points={{68,14},{94,20},{94,76},{82,76},{70,76},{12,76}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -176,10 +177,13 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Left));
     transition(
-      actionDown1,
-      wait1,(sample(time) - offset) > (Td + Tm),     immediate=false,
-                                                                    reset=true,
-      synchronize=false,priority=1) annotation (Line(
+        downAction,
+        wait,
+        (sample(time) - offset) > (Td + Tm),
+        immediate=false,
+        reset=true,
+        synchronize=false,
+        priority=1) annotation (Line(
         points={{34,-78},{34,-92},{10,-92},{8,58}},
         color={175,175,175},
         thickness=0.25,
@@ -191,10 +195,13 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-      wait1,
-      countUp1,(udev < -DB/2) and (tappos < maxtap),
-      priority=2,immediate=true,reset=true,synchronize=false)
-                  annotation (Line(
+        wait,
+        upCount,
+        (udev < -DB/2) and (tappos < maxtap),
+        priority=2,
+        immediate=true,
+        reset=true,
+        synchronize=false) annotation (Line(
         points={{-12,68},{-36,68},{-36,40}},
         color={175,175,175},
         thickness=0.25,
@@ -206,11 +213,13 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-      countUp1,
-      actionUp1,(sample(time) - offset) > Td,
-      priority=2,immediate=false,
-                                reset=true,synchronize=false)
-                  annotation (Line(
+        upCount,
+        upAction,
+        (sample(time) - offset) > Td,
+        priority=2,
+        immediate=false,
+        reset=true,
+        synchronize=false) annotation (Line(
         points={{-36,0},{-34,-58}},
         color={175,175,175},
         thickness=0.25,
@@ -222,9 +231,13 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-      countUp1,
-      wait1,not ((udev < -DB/2) and (tappos < maxtap)),immediate=true,reset=true,
-      synchronize=false,priority=1)               annotation (Line(
+        upCount,
+        wait,
+        not ((udev < -DB/2) and (tappos < maxtap)),
+        immediate=true,
+        reset=true,
+        synchronize=false,
+        priority=1) annotation (Line(
         points={{-60,20},{-96,20},{-96,76},{-12,76}},
         color={175,175,175},
         thickness=0.25,
@@ -236,9 +249,13 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-      wait1,
-      countDown1,(udev > DB/2) and (tappos > mintap),immediate=true,reset=true,
-      synchronize=false,priority=1)    annotation (Line(
+        wait,
+        downCount,
+        (udev > DB/2) and (tappos > mintap),
+        immediate=true,
+        reset=true,
+        synchronize=false,
+        priority=1) annotation (Line(
         points={{12,68},{44,68},{41,40}},
         color={175,175,175},
         thickness=0.25,
@@ -250,10 +267,13 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-      actionUp1,
-      wait1,(sample(time) - offset) > (Td + Tm),   immediate=false,
-                                                                  reset=true,synchronize=false,
-      priority=1)                 annotation (Line(
+        upAction,
+        wait,
+        (sample(time) - offset) > (Td + Tm),
+        immediate=false,
+        reset=true,
+        synchronize=false,
+        priority=1) annotation (Line(
         points={{-34,-82},{-34,-90},{-34,-96},{-4,-96},{-4,58}},
         color={175,175,175},
         thickness=0.25,
@@ -264,7 +284,7 @@ package TapChanger
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
-    initialState(wait1) annotation (Line(
+    initialState(wait) annotation (Line(
         points={{0,82},{0,96},{8,96}},
         color={175,175,175},
         thickness=0.25,
