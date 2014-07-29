@@ -1,15 +1,18 @@
 within ;
 package TapChanger
   model TCULState
-    parameter Integer method=1 "Method number";
-    parameter Real n=1 "Transformer Ratio";
-    parameter Real stepsize=0.01 "Step Size";
-    parameter Integer mintap=-12 "Minimum tap step";
-    parameter Integer maxtap=12 "Maximum tap step";
+    extends Modelica.Blocks.Interfaces.SI2SO;
+    parameter Modelica.SIunits.Time ActivationTime
+      "Time from which on the TCUL controller shall be activated (default=0)";
+    parameter Integer method=1 "Method number (mechanical characteristic)";
+    parameter Real n=1 "Initial transformer Ratio";
+    parameter Real stepsize=DB/(abs(maxtap)+abs(mintap)) "Step size";
+    parameter Integer mintap=-16 "Minimum tap step";
+    parameter Integer maxtap=16 "Maximum tap step";
     parameter Modelica.SIunits.Duration Tm0=10 "Mechanical Time Delay";
     parameter Modelica.SIunits.Duration Td0=20 "Controller Time Delay 1";
     parameter Modelica.SIunits.Duration Td1=20 "Controller Time Delay 2";
-    parameter Modelica.SIunits.PerUnit DB=0.03
+    parameter Modelica.SIunits.PerUnit DB=0.02
       "TCUL Voltage Deadband (double-sided)";
     parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference";
     parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
@@ -18,13 +21,14 @@ package TapChanger
     inner Modelica.SIunits.Time offset(start=0);
      Modelica.SIunits.Time Td;
      Modelica.SIunits.Time Tm;
-    parameter Real udev=0.1 "Transformer Ratio";
+    Modelica.SIunits.PerUnit Vdev "Voltage deviation";
+    Boolean blocked=u2 < Vblock "Tap locked ?";
 
     model Wait
 
       annotation (
-        Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
-                100,100}}),
+        Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
+                100}}),
              graphics={Text(
               extent={{-100,100},{100,-100}},
               lineColor={0,0,0},
@@ -38,7 +42,7 @@ package TapChanger
         showDiagram=true,
         singleInstance=true);
     end Wait;
-    Wait wait annotation (Placement(transformation(extent={{-10,60},{10,80}})));
+    Wait wait annotation (Placement(transformation(extent={{-10,42},{10,62}})));
     model DownCount
        outer output Modelica.SIunits.Time offset;
        Integer tmp(start=0);
@@ -67,7 +71,7 @@ package TapChanger
 
     end DownCount;
 
-    model MechDelay
+    model Delay
 
       annotation (
         Icon(graphics={Text(
@@ -82,7 +86,7 @@ package TapChanger
         __Dymola_state=true,
         showDiagram=true,
         singleInstance=false);
-    end MechDelay;
+    end Delay;
 
     model DownAction
        outer output Real tappos;
@@ -153,10 +157,11 @@ package TapChanger
         showDiagram=true,
         singleInstance=true);
     end UpAction;
-    MechDelay downMechDelay
+    Delay downMechDelay
       annotation (Placement(transformation(extent={{42,-38},{58,-22}})));
-    MechDelay upMechDelay
+    Delay upMechDelay
       annotation (Placement(transformation(extent={{-58,-38},{-42,-22}})));
+    Delay delay annotation (Placement(transformation(extent={{-6,74},{6,84}})));
   equation
     if method == 1 then
       Td = Td0;
@@ -165,15 +170,16 @@ package TapChanger
       Td = Td0;
       Tm = Tm0;
     end if;
-
+    Vdev = u1 - Vref;
+    tappos = (y - 1)/stepsize + 0.5;  // convert to nearest integer
     transition(
       downCount,
-      wait,udev <= DB/2,
+      wait,Vdev <= DB/2,
       priority=1,
       immediate=true,
       reset=true,
       synchronize=false) annotation (Line(
-        points={{80,14},{94,14},{94,74},{82,76},{70,76},{12,76}},
+        points={{80,14},{94,14},{94,52},{94,58},{70,58},{12,58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -185,12 +191,12 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       wait,
-      upCount,(udev < -DB/2) and (previous(tappos) + 1 < maxtap),
+      upCount,(Vdev < -DB/2) and (previous(tappos) + 1 < maxtap) and not blocked,
       priority=2,
       immediate=true,
       reset=true,
       synchronize=false) annotation (Line(
-        points={{-12,68},{-36,68},{-50,68},{-50,40}},
+        points={{-12,50},{-50,50},{-50,40}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -202,12 +208,12 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       upCount,
-      wait,udev >= -DB/2,
+      wait,(Vdev >= -DB/2) or blocked,
       immediate=true,
       reset=true,
       synchronize=false,
       priority=1) annotation (Line(
-        points={{-80,20},{-96,20},{-96,76},{-12,76}},
+        points={{-80,20},{-96,20},{-96,58},{-12,58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -219,12 +225,12 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       wait,
-      downCount,(udev > DB/2) and (previous(tappos) - 1 > mintap),
+      downCount,(Vdev > DB/2) and (previous(tappos) - 1 > mintap),
       immediate=true,
       reset=true,
       synchronize=false,
       priority=1) annotation (Line(
-        points={{12,68},{44,68},{50,68},{50,40}},
+        points={{12,50},{44,50},{50,50},{50,40}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -234,14 +240,7 @@ package TapChanger
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
-    initialState(wait) annotation (Line(
-        points={{0,82},{0,96},{8,96}},
-        color={175,175,175},
-        thickness=0.25,
-        smooth=Smooth.Bezier,
-        arrow={Arrow.Filled,Arrow.None}));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{100,100}}), graphics));
+
     transition(
       downCount,
       downMechDelay,sample(time) - offset > Td,
@@ -273,14 +272,14 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-        downAction,
-        wait,
-        true,
-        immediate=true,
-        reset=true,
-        synchronize=false,
-        priority=1) annotation (Line(
-        points={{50,-80},{50,-94},{4,-94},{4,-90},{4,58}},
+      downAction,
+      wait,
+      true,
+      immediate=true,
+      reset=true,
+      synchronize=false,
+      priority=1) annotation (Line(
+        points={{50,-80},{50,-94},{4,-94},{4,-90},{4,40}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -291,11 +290,11 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Left));
     transition(
-        upCount,
-        upMechDelay,
-        (sample(time) - offset) > Td,
-        immediate=false,
-        priority=2) annotation (Line(
+      upCount,
+      upMechDelay,
+      (sample(time) - offset) > Td,
+      immediate=false,
+      priority=2) annotation (Line(
         points={{-50,0},{-50,-20}},
         color={175,175,175},
         thickness=0.25,
@@ -307,13 +306,13 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-        upMechDelay,
-        upAction,
-        (sample(time) - offset) > (Td + Tm),
-        immediate=false,
-        reset=true,
-        synchronize=false,
-        priority=1) annotation (Line(
+      upMechDelay,
+      upAction,
+      (sample(time) - offset) > (Td + Tm),
+      immediate=false,
+      reset=true,
+      synchronize=false,
+      priority=1) annotation (Line(
         points={{-50,-40},{-50,-60}},
         color={175,175,175},
         thickness=0.25,
@@ -325,10 +324,10 @@ package TapChanger
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
-        upAction,
-        wait,
-        true) annotation (Line(
-        points={{-50,-80},{-50,-96},{-4,-96},{-4,58}},
+      upAction,
+      wait,
+      true) annotation (Line(
+        points={{-50,-80},{-50,-96},{-4,-96},{-4,40}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -338,6 +337,28 @@ package TapChanger
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Left));
+    transition(
+      delay,
+      wait,sample(time) >= ActivationTime,immediate=true,reset=true,synchronize=false,
+      priority=1) annotation (Line(
+        points={{0,72},{0,64}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier), Text(
+        string="%condition",
+        extent={{8,2},{8,8}},
+        lineColor={95,95,95},
+        fontSize=10,
+        textStyle={TextStyle.Bold},
+        horizontalAlignment=TextAlignment.Right));
+    initialState(delay) annotation (Line(
+        points={{0,86},{0,96},{2,96},{6,96}},
+        color={175,175,175},
+        thickness=0.25,
+        smooth=Smooth.Bezier,
+        arrow={Arrow.Filled,Arrow.None}));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}), graphics));
   end TCULState;
 
   model TCULStateTest
