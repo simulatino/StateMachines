@@ -15,8 +15,7 @@ package TapChanger
     parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
     parameter Boolean InitByVoltage=false "Initialize to V=Vref?";
      parameter Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
-    inner Modelica.SIunits.Time upcounter(start=-10, fixed=true);
-    inner Modelica.SIunits.Time downcounter(start=-10, fixed=true);
+    inner discrete Modelica.SIunits.Time offset(start=0);
      Modelica.SIunits.Time Td;
      Modelica.SIunits.Time Tm;
 
@@ -40,9 +39,17 @@ package TapChanger
     end Wait1;
     Wait1 wait1 annotation (Placement(transformation(extent={{-10,60},{10,80}})));
     model CountDown1
-       outer Modelica.SIunits.Time downcounter;
+       outer Modelica.SIunits.Time offset;
+       Integer tmp(start=0);
     equation
-      downcounter = sample(time);
+      tmp = previous(tmp)+1;
+      if tmp == 1 then
+        /* we need to substract the interval time 
+     because of delayed trigger */
+        offset = sample(time) - interval(offset);
+      else
+        offset = previous(offset);
+      end if
       annotation (
         Icon(graphics={Text(
               extent={{-100,100},{100,-100}},
@@ -51,11 +58,12 @@ package TapChanger
         Diagram(graphics={Text(
               extent={{-100,100},{100,-100}},
               lineColor={0,0,0},
-              textString="%stateName",
+              textString="%stateText",
               fontSize=10)}),
         __Dymola_state=true,
         showDiagram=true,
         singleInstance=true);
+
     end CountDown1;
 
     model ActionDown1
@@ -75,19 +83,23 @@ package TapChanger
         singleInstance=true);
     end ActionDown1;
     ActionDown1 actionDown1
-      annotation (Placement(transformation(extent={{20,-20},{40,0}})));
+      annotation (Placement(transformation(extent={{22,-76},{42,-56}})));
     CountDown1 countDown1
-      annotation (Placement(transformation(extent={{20,20},{40,40}})));
+      annotation (Placement(transformation(extent={{16,2},{66,38}})));
     CountUp1 countUp1
-      annotation (Placement(transformation(extent={{-42,20},{-22,40}})));
+      annotation (Placement(transformation(extent={{-58,2},{-14,38}})));
     ActionUp1 actionUp1
-      annotation (Placement(transformation(extent={{-42,-20},{-22,0}})));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{100,100}}), graphics));
+      annotation (Placement(transformation(extent={{-44,-80},{-24,-60}})));
     model CountUp1
-      outer Modelica.SIunits.Time upcounter;
+    //   outer Modelica.SIunits.Time offset;
+     // Integer tmp(start=0);
     equation
-      upcounter = sample(time);
+    //   tmp = previous(tmp) + 1;
+    //   if tmp == 1 then
+    //     offset = sample(time);
+    //   else
+    //     offset = previous(offset);
+    //   end if
       annotation (
         Icon(graphics={Text(
               extent={{-100,100},{100,-100}},
@@ -96,7 +108,7 @@ package TapChanger
         Diagram(graphics={Text(
               extent={{-100,100},{100,-100}},
               lineColor={0,0,0},
-              textString="%stateName",
+              textString="%stateText",
               fontSize=10)}),
         __Dymola_state=true,
         showDiagram=true,
@@ -121,23 +133,26 @@ package TapChanger
     end ActionUp1;
   equation
     if method == 1 then
-       Td = Td0;
-       Tm = Tm0;
+      Td = Td0;
+      Tm = Tm0;
+    else
+      Td = Td0;
+      Tm = Tm0;
     end if;
 
     transition(
       countDown1,
-      actionDown1,sample(time) - downcounter > Td,
+      actionDown1,sample(time) - offset > Td,
       immediate=false,
       reset=true,
       synchronize=false,
       priority=2) annotation (Line(
-        points={{30,18},{30,2}},
+        points={{41,0},{32,-54}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,-4},{-4,-10}},
+        extent={{54,-8},{54,-14}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -150,7 +165,7 @@ package TapChanger
       immediate=true,
       reset=true,
       synchronize=false) annotation (Line(
-        points={{42,28},{58,28},{58,76},{46,76},{34,76},{12,76}},
+        points={{68,20},{94,20},{94,76},{82,76},{70,76},{12,76}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -162,10 +177,10 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       actionDown1,
-      wait1,(sample(time) - downcounter) > (Td + Tm),immediate=false,
+      wait1,(sample(time) - offset) > (Td + Tm),     immediate=false,
                                                                     reset=true,
       synchronize=false,priority=1) annotation (Line(
-        points={{32,-22},{32,-40},{8,-40},{8,58}},
+        points={{34,-78},{34,-92},{10,-92},{8,58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -180,23 +195,23 @@ package TapChanger
       countUp1,(udev < -DB/2) and (tappos < maxtap),
       priority=2,immediate=true,reset=true,synchronize=false)
                   annotation (Line(
-        points={{-12,68},{-32,68},{-32,42}},
+        points={{-12,68},{-36,68},{-36,40}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,4},{-4,10}},
+        extent={{-6,14},{-6,20}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
       countUp1,
-      actionUp1,(sample(time) - upcounter) > Td,
+      actionUp1,(sample(time) - offset) > Td,
       priority=2,immediate=false,
                                 reset=true,synchronize=false)
                   annotation (Line(
-        points={{-32,18},{-32,2}},
+        points={{-36,0},{-34,-58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -210,7 +225,7 @@ package TapChanger
       countUp1,
       wait1,not ((udev < -DB/2) and (tappos < maxtap)),immediate=true,reset=true,
       synchronize=false,priority=1)               annotation (Line(
-        points={{-44,28},{-60,28},{-60,76},{-12,76}},
+        points={{-60,20},{-96,20},{-96,76},{-12,76}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -224,22 +239,22 @@ package TapChanger
       wait1,
       countDown1,(udev > DB/2) and (tappos > mintap),immediate=true,reset=true,
       synchronize=false,priority=1)    annotation (Line(
-        points={{12,68},{32,68},{32,42}},
+        points={{12,68},{44,68},{41,40}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,4},{-4,10}},
+        extent={{72,14},{72,20}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
       actionUp1,
-      wait1,(sample(time) - upcounter) > (Td + Tm),immediate=false,
+      wait1,(sample(time) - offset) > (Td + Tm),   immediate=false,
                                                                   reset=true,synchronize=false,
       priority=1)                 annotation (Line(
-        points={{-32,-22},{-32,-34},{-32,-42},{-4,-42},{-4,58}},
+        points={{-34,-82},{-34,-90},{-34,-96},{-4,-96},{-4,58}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
@@ -255,6 +270,8 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier,
         arrow={Arrow.Filled,Arrow.None}));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}), graphics));
   end TCULState;
 
   model TCULStateTest
@@ -337,8 +354,6 @@ package TapChanger
       annotation (Placement(transformation(extent={{-42,20},{-22,40}})));
     ActionUp1 actionUp1
       annotation (Placement(transformation(extent={{-42,-20},{-22,0}})));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{100,100}}), graphics));
     model CountUp1
 
       annotation (
@@ -504,6 +519,8 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier,
         arrow={Arrow.Filled,Arrow.None}));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}), graphics));
   end TCULStateTest;
 
   model TCULStateTest2
@@ -527,7 +544,6 @@ package TapChanger
     Modelica.SIunits.Time Tm;
 
     parameter Real udev=0.1 "Transformer Ratio";
-
 
     Modelica.Blocks.Logical.GreaterThreshold greaterThreshold(threshold=DB/2)
       annotation (Placement(transformation(extent={{-40,50},{-20,70}})));
@@ -603,17 +619,17 @@ package TapChanger
         points={{101,50},{102,50},{102,50},{100,50},{110,50},{110,0},{118,0}},
         color={255,0,255},
         smooth=Smooth.None));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{160,100}}), graphics), Icon(coordinateSystem(extent={{-100,
-              -100},{160,100}})));
 
   //   if method == 1 then
   //      Td = Td0;
   //      Tm = Tm0;
   //   end if;
 
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{160,100}}), graphics), Icon(coordinateSystem(extent={{-100,
+              -100},{160,100}})));
   end TCULStateTest2;
-  annotation (uses(Modelica(version="3.2.1")));
+
   model Test
 
     inner Integer i( start=0);
@@ -700,4 +716,5 @@ package TapChanger
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
               -100},{100,100}}), graphics));
   end Test;
+  annotation (uses(Modelica(version="3.2.1")));
 end TapChanger;
