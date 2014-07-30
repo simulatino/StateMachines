@@ -215,7 +215,10 @@ package TapChanger
 
     Vdev = u1_s - Vref;
     hold(tappos) = (y - 1)/stepsize; // hold the discrete signals for output
-    y1 = hold(tappos_offset); // hold the discrete signals for output
+    /* Hold and delay the discrete signals for output.
+  Not quite clear why the delay but this is required
+  for coupling with the EPL/Spot type transformer models. */
+    y1 = hold(previous(tappos_offset));
 
     transition(
       downCount,
