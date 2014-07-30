@@ -91,7 +91,6 @@ package TapChanger
 
     end DownCount;
 
-
     model DownAction
        outer output Real tappos;
     equation
@@ -168,8 +167,6 @@ package TapChanger
     Delay delay annotation (Placement(transformation(extent={{-6,78},{6,88}})));
     Modelica.Blocks.Interfaces.IntegerOutput y1
       annotation (Placement(transformation(extent={{100,50},{120,70}})));
-    Modelica.Blocks.Interfaces.IntegerOutput y2
-      annotation (Placement(transformation(extent={{100,-70},{120,-50}})));
   equation
     if method == 1 then
       Td = Td0;
@@ -181,7 +178,7 @@ package TapChanger
     Vdev = u1 - Vref;
     tappos = (y - 1)/stepsize;
     y1 = tappos_offset;
-    y2 = 1*time "Currently y2 is not in use and set to zero";
+
     transition(
       downCount,
       wait,sample(Vdev) <= DB/2,
@@ -381,10 +378,12 @@ package TapChanger
       offset=1)
       annotation (Placement(transformation(extent={{-62,10},{-42,30}})));
     Modelica.Blocks.MathInteger.Product
-                        product(nu=2)
+                        product(nu=1)
       annotation (Placement(transformation(extent={{48,2},{60,14}})));
     Modelica.Blocks.Interaction.Show.IntegerValue showValue1
       annotation (Placement(transformation(extent={{74,-2},{94,18}})));
+    Modelica.Blocks.Sources.IntegerStep integerStep(offset=2, startTime=2)
+      annotation (Placement(transformation(extent={{0,-36},{20,-16}})));
   equation
     connect(Sine.y, tCULState.u1) annotation (Line(
         points={{-41,20},{-16,20},{-16,14},{-4,14}},
@@ -399,15 +398,11 @@ package TapChanger
         color={255,127,0},
         smooth=Smooth.None));
     connect(tCULState.y1, product.u[1]) annotation (Line(
-        points={{19,14},{38.5,14},{38.5,10.1},{48,10.1}},
+        points={{19,14},{38.5,14},{38.5,8},{48,8}},
         color={255,127,0},
         smooth=Smooth.None));
-    connect(tCULState.y2, product.u[2]) annotation (Line(
-        points={{19,2},{34,2},{34,5.9},{48,5.9}},
-        color={255,127,0},
-        smooth=Smooth.None));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
-              -100,-100},{100,100}}), graphics));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}),      graphics));
   end Test;
   annotation (uses(Modelica(version="3.2.1")));
 end TapChanger;
