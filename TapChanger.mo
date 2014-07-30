@@ -2,21 +2,49 @@ within ;
 package TapChanger
   model TCULState
     extends Modelica.Blocks.Interfaces.SI2SO;
+    /* Time parameters */
     parameter Modelica.SIunits.Time ActivationTime=3
-      "Time from which on the TCUL controller shall be activated (default=0)";
-    parameter Integer method=1 "Method number (mechanical characteristic)";
-    parameter Real n=1 "Initial transformer Ratio";
-    parameter Real stepsize=DB/(abs(maxtap)+abs(mintap)) "Step size";
-    parameter Integer mintap=-16 "Minimum tap step";
-    parameter Integer maxtap=16 "Maximum tap step";
-    parameter Modelica.SIunits.Duration Tm0=10 "Mechanical Time Delay";
-    parameter Modelica.SIunits.Duration Td0=20 "Controller Time Delay 1";
-    parameter Modelica.SIunits.Duration Td1=20 "Controller Time Delay 2";
+      "Time from which on the TCUL controller shall be activated (default=0)"
+      annotation (Dialog(group="Time settings"));
+    parameter Modelica.SIunits.Duration Tm0=10 "Mechanical Time Delay"
+      annotation (Dialog(group="Time settings"));
+    parameter Modelica.SIunits.Duration Td0=20 "Controller Time Delay 1"
+      annotation (Dialog(group="Time settings"));
+    parameter Modelica.SIunits.Duration Td1=20 "Controller Time Delay 2"
+      annotation (Dialog(group="Time settings"));
+
+    /* Tap parameters */
+    parameter Real n=1 "Initial transformer ratio"
+        annotation (Dialog(group="Tap settings"));
+    parameter Integer mintap=-16 "Minimum tap step"
+        annotation (Dialog(group="Tap settings"));
+    parameter Integer maxtap=16 "Maximum tap step"
+        annotation (Dialog(group="Tap settings"));
     parameter Modelica.SIunits.PerUnit DB=0.02
-      "TCUL Voltage Deadband (double-sided)";
-    parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference";
-    parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage";
-    parameter Boolean InitByVoltage=false "Initialize to V=Vref?";
+      "TCUL Voltage Deadband (double-sided)"
+        annotation (Dialog(group="Tap settings"));
+    parameter Real stepsize=DB/(abs(maxtap)+abs(mintap)) "Step size"
+        annotation (Dialog(group="Tap settings"));
+    parameter Integer method(min=1, max=4)=1
+      "Method number (mechanical characteristic)"
+        annotation (Dialog(group="Tap settings"));
+
+    /* Voltage parameters */
+    parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference"
+        annotation (Dialog(group="Voltage settings"));
+    parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage"
+        annotation (Dialog(group="Voltage settings"));
+
+    /* Sampling settings */
+    parameter Modelica.SIunits.Time SamplePeriod=1
+      "Sample period for the input signals"
+      annotation (Dialog(tab="Sampling settings"));
+    Clock clk = Clock(SamplePeriod) "Definition of a global Clock";
+    inner Modelica.SIunits.Time time_s = sample(time, clk) "Sampled time";
+    Modelica.SIunits.PerUnit u1_s = sample(u1, clk) "Sampled input signal u1";
+    Modelica.SIunits.PerUnit u2_s = sample(u2, clk) "Sampled input signal u1";
+
+    /* Other variables */
     inner Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
     Integer tappos_offset = integer(tappos+0.5) + abs(mintap)
       "Tap step shifted by mintap";
@@ -25,7 +53,7 @@ package TapChanger
     Modelica.SIunits.Time Td "Delay time before tapping is triggered";
     Modelica.SIunits.Time Tm "Delay time for the mechanical tapping";
     Modelica.SIunits.PerUnit Vdev "Voltage deviation";
-    Boolean blocked=sample(u2) < Vblock "Tap locked ?";
+    Boolean blocked=u2_s < Vblock "Tap locked ?";
 
     model Wait
 
@@ -65,13 +93,14 @@ package TapChanger
 
     model DownCount
        outer output Modelica.SIunits.Time offset;
+       outer Modelica.SIunits.Time time_s;
        Integer tmp(start=0);
     equation
       tmp = previous(tmp)+1;
       if tmp == 1 then
         /* we need to substract the interval time 
      because of delayed trigger */
-        offset = sample(time) - interval(offset);
+        offset = time_s - interval(offset);
       else
         offset = previous(offset);
       end if
@@ -119,11 +148,12 @@ package TapChanger
       annotation (Placement(transformation(extent={{-72,-78},{-28,-62}})));
     model UpCount
       outer output Modelica.SIunits.Time offset;
+      outer Modelica.SIunits.Time time_s;
       Integer tmp(start=0);
     equation
        tmp = previous(tmp) + 1;
        if tmp == 1 then
-         offset = sample(time)- interval(offset);
+         offset = time_s- interval(offset);
        else
          offset = previous(offset);
        end if
@@ -167,21 +197,29 @@ package TapChanger
     Delay delay annotation (Placement(transformation(extent={{-6,78},{6,88}})));
     Modelica.Blocks.Interfaces.IntegerOutput y1
       annotation (Placement(transformation(extent={{100,50},{120,70}})));
+
   equation
-    if method == 1 then
+    if (method == 1) then
       Td = Td0;
       Tm = Tm0;
+    elseif (method == 2) then
+      Td = Td0*DB/2/max(abs(Vdev), 1e-6);
+      Tm = Tm0;
+    elseif (method == 3) then
+      Td = Td0*DB/2/max(abs(Vdev), 1e-6);
+      Tm = Tm0*DB/2/max(abs(Vdev), 1e-6);
     else
-      Td = Td0;
+      Td = Td1 + Td0*DB/2/max(abs(Vdev), 1e-6);
       Tm = Tm0;
     end if;
-    Vdev = u1 - Vref;
-    tappos = (y - 1)/stepsize;
-    y1 = tappos_offset;
+
+    Vdev = u1_s - Vref;
+    hold(tappos) = (y - 1)/stepsize; // hold the discrete signals for output
+    y1 = hold(tappos_offset); // hold the discrete signals for output
 
     transition(
       downCount,
-      wait,sample(Vdev) <= DB/2,
+      wait,Vdev <= DB/2,
       priority=1,
       immediate=true,
       reset=true,
@@ -198,7 +236,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       wait,
-      upCount,(sample(Vdev) < -DB/2) and (previous(tappos) + 1 < maxtap) and not
+      upCount,(Vdev < -DB/2) and (previous(tappos) + 1 < maxtap) and not
       blocked,
       priority=2,
       immediate=true,
@@ -216,7 +254,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       upCount,
-      wait,(sample(Vdev) >= -DB/2) or blocked,
+      wait,(Vdev >= -DB/2) or blocked,
       immediate=true,
       reset=true,
       synchronize=false,
@@ -233,7 +271,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       wait,
-      downCount,(sample(Vdev) > DB/2) and (previous(tappos) - 1 > mintap),
+      downCount,(Vdev > DB/2) and (previous(tappos) - 1 > mintap),
       immediate=true,
       reset=true,
       synchronize=false,
@@ -251,7 +289,7 @@ package TapChanger
 
     transition(
       downCount,
-      downMechDelay,sample(time) - offset > Td,
+      downMechDelay,time_s - offset > Td,
       immediate=false,
       priority=2,reset=true,synchronize=false)
                   annotation (Line(
@@ -267,7 +305,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       downMechDelay,
-      downAction,(sample(time) - offset) > (Td + Tm),immediate=false,reset=true,
+      downAction,(time_s - offset) > (Td + Tm),immediate=false,reset=true,
       synchronize=false,priority=1)        annotation (Line(
         points={{50,-46},{50,-60}},
         color={175,175,175},
@@ -300,7 +338,7 @@ package TapChanger
     transition(
       upCount,
       upMechDelay,
-      (sample(time) - offset) > Td,
+      (time_s - offset) > Td,
       immediate=false,
       priority=2) annotation (Line(
         points={{-50,0},{-50,-20}},
@@ -316,7 +354,7 @@ package TapChanger
     transition(
       upMechDelay,
       upAction,
-      (sample(time) - offset) > (Td + Tm),
+      (time_s - offset) > (Td + Tm),
       immediate=false,
       reset=true,
       synchronize=false,
@@ -347,7 +385,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Left));
     transition(
       delay,
-      wait,sample(time) >= ActivationTime,immediate=true,reset=true,synchronize=false,
+      wait,time_s >= ActivationTime,immediate=true,reset=true,synchronize=false,
       priority=1) annotation (Line(
         points={{0,76},{0,66}},
         color={175,175,175},
@@ -370,6 +408,7 @@ package TapChanger
   end TCULState;
 
   model Test
+
     TCULState tCULState
       annotation (Placement(transformation(extent={{-2,-2},{18,18}})));
     Modelica.Blocks.Sources.Sine Sine(
@@ -378,7 +417,7 @@ package TapChanger
       offset=1)
       annotation (Placement(transformation(extent={{-62,10},{-42,30}})));
     Modelica.Blocks.MathInteger.Product
-                        product(nu=1)
+                        product(nu=2)
       annotation (Placement(transformation(extent={{48,2},{60,14}})));
     Modelica.Blocks.Interaction.Show.IntegerValue showValue1
       annotation (Placement(transformation(extent={{74,-2},{94,18}})));
@@ -398,7 +437,11 @@ package TapChanger
         color={255,127,0},
         smooth=Smooth.None));
     connect(tCULState.y1, product.u[1]) annotation (Line(
-        points={{19,14},{38.5,14},{38.5,8},{48,8}},
+        points={{19,14},{38.5,14},{38.5,10.1},{48,10.1}},
+        color={255,127,0},
+        smooth=Smooth.None));
+    connect(integerStep.y, product.u[2]) annotation (Line(
+        points={{21,-26},{34,-26},{34,5.9},{48,5.9}},
         color={255,127,0},
         smooth=Smooth.None));
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
