@@ -404,7 +404,36 @@ package TapChanger
         smooth=Smooth.Bezier,
         arrow={Arrow.Filled,Arrow.None}));
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{100,100}}), graphics));
+              -100},{100,100}}), graphics), Documentation(info="Discrete implementation of Tap-Changing Under Load (TCUL) control system
+according to method D1-D4 in [1] using a state-machine implementation of
+the control system and tap changer mechanism.
+
+Ideally the variable 'tappos' should be initialized to give a voltage
+deviation within the deadband at the start of the simulatation. 
+Failure to do so may result in convergence problems with the initial 
+value solver.
+
+Using the parameter the characteristics of the mechanical delay time (Tm)
+and the controlled delay time (Td) the TCUL can be influenced according
+to the table below:
+
+----------------------------------
+|method|    Td     |    Tm       |
+----------------------------------
+|  1   |  constant |  constant   |
+|  2   |  inverse  |  constant   |
+|  3   |  inverse  |  inverse    |
+|  4   |  both     |  constant   |
+----------------------------------
+
+The tap changer is locked if the primary side voltage decreases below the
+tap locking voltage specified in Vblock.
+---
+[1] P.W. Sauer and M.A. Pai, \"A comparison of discrete vs. continuous
+dynamic models of tap-changing-under-load transformers\", in Proceedings
+of NSF/ECC Workshop on Bulk power System Voltage Phenomena - III :
+Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
+"));
   end TCULState;
 
   model Test
