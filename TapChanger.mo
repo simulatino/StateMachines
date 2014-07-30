@@ -178,7 +178,7 @@ package TapChanger
       Tm = Tm0;
     end if;
     Vdev = u1 - Vref;
-    tappos = (y - 1)/stepsize + 0.5;  // convert to nearest integer
+    tappos = (y - 1)/stepsize;
     y1 = tappos_offset;
     y2 = 1*time "Currently y2 is not in use and set to zero";
     transition(
@@ -371,8 +371,6 @@ package TapChanger
               -100},{100,100}}), graphics));
   end TCULState;
 
-
-  annotation (uses(Modelica(version="3.2.1")));
   model Test
     TCULState tCULState
       annotation (Placement(transformation(extent={{-2,-2},{18,18}})));
@@ -410,4 +408,5 @@ package TapChanger
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{
               -100,-100},{100,100}}), graphics));
   end Test;
+  annotation (uses(Modelica(version="3.2.1")));
 end TapChanger;
