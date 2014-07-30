@@ -139,11 +139,11 @@ package TapChanger
         singleInstance=true);
     end DownAction;
     DownAction downAction
-      annotation (Placement(transformation(extent={{28,-78},{72,-62}})));
+      annotation (Placement(transformation(extent={{28,-84},{72,-68}})));
     DownCount downCount
-      annotation (Placement(transformation(extent={{18,-14},{82,38}})));
+      annotation (Placement(transformation(extent={{14,-24},{86,38}})));
     UpCount upCount
-      annotation (Placement(transformation(extent={{-82,2},{-18,38}})));
+      annotation (Placement(transformation(extent={{-86,-16},{-14,38}})));
     UpAction upAction
       annotation (Placement(transformation(extent={{-72,-78},{-28,-62}})));
     model UpCount
@@ -191,9 +191,9 @@ package TapChanger
         singleInstance=true);
     end UpAction;
     Delay downMechDelay
-      annotation (Placement(transformation(extent={{42,-44},{58,-28}})));
+      annotation (Placement(transformation(extent={{42,-56},{58,-40}})));
     Delay upMechDelay
-      annotation (Placement(transformation(extent={{-58,-38},{-42,-22}})));
+      annotation (Placement(transformation(extent={{-58,-46},{-42,-30}})));
     Delay delay annotation (Placement(transformation(extent={{-6,78},{6,88}})));
     Modelica.Blocks.Interfaces.IntegerOutput y1
       annotation (Placement(transformation(extent={{100,50},{120,70}})));
@@ -227,12 +227,12 @@ package TapChanger
       immediate=true,
       reset=true,
       synchronize=false) annotation (Line(
-        points={{84,12},{94,14},{94,52},{94,60},{70,60},{12,60}},
+        points={{88,7},{98,7},{98,52},{98,60},{70,60},{12,60}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{4,4},{4,10}},
+        extent={{8,0},{8,6}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -249,7 +249,7 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,4},{-4,10}},
+        extent={{32,6},{32,12}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -261,12 +261,12 @@ package TapChanger
       reset=true,
       synchronize=false,
       priority=1) annotation (Line(
-        points={{-84,20},{-96,20},{-96,60},{-12,60}},
+        points={{-88,11},{-98,11},{-98,60},{-12,60}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,4},{-4,10}},
+        extent={{-8,0},{-8,6}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -283,7 +283,7 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-4,4},{-4,10}},
+        extent={{48,6},{48,12}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -295,12 +295,12 @@ package TapChanger
       immediate=false,
       priority=2,reset=true,synchronize=false)
                   annotation (Line(
-        points={{50,-16},{50,-26}},
+        points={{50,-26},{50,-38}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{18,-6},{18,-12}},
+        extent={{8,-4},{8,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -309,12 +309,12 @@ package TapChanger
       downMechDelay,
       downAction,(time_s - offset) > (Td + Tm),immediate=false,reset=true,
       synchronize=false,priority=1)        annotation (Line(
-        points={{50,-46},{50,-60}},
+        points={{50,-58},{50,-66}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{20,-6},{20,-12}},
+        extent={{22,-2},{22,-8}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -326,12 +326,12 @@ package TapChanger
       reset=true,
       synchronize=false,
       priority=1) annotation (Line(
-        points={{50,-80},{50,-94},{28,-94},{4,-94},{4,42}},
+        points={{50,-86},{50,-94},{28,-94},{4,-94},{4,42}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{4,-4},{4,-10}},
+        extent={{0,-6},{0,-12}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -342,12 +342,12 @@ package TapChanger
       (time_s - offset) > Td,
       immediate=false,
       priority=2) annotation (Line(
-        points={{-50,0},{-50,-20}},
+        points={{-50,-18},{-50,-28}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{18,-8},{18,-14}},
+        extent={{22,-2},{22,-8}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -360,12 +360,12 @@ package TapChanger
       reset=true,
       synchronize=false,
       priority=1) annotation (Line(
-        points={{-50,-40},{-50,-60}},
+        points={{-50,-48},{-50,-60}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{32,-10},{32,-16}},
+        extent={{22,-4},{22,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -379,7 +379,7 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{4,-4},{4,-10}},
+        extent={{-6,-6},{-6,-12}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
