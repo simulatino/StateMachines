@@ -229,15 +229,14 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{8,0},{8,6}},
+        extent={{4,4},{4,10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Left));
     transition(
       wait,
-      upCount,(Vdev < -DB/2) and (previous(tappos) + 1 < maxtap) and not
-      blocked,
+      upCount,(Vdev < -DB/2) and (previous(tappos) < maxtap) and not blocked,
       priority=2,
       immediate=true,
       reset=true,
@@ -247,7 +246,7 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{36,4},{36,10}},
+        extent={{-4,4},{-4,10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -264,14 +263,14 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-8,0},{-8,6}},
+        extent={{-4,4},{-4,10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
         horizontalAlignment=TextAlignment.Right));
     transition(
       wait,
-      downCount,(Vdev > DB/2) and (previous(tappos) - 1 > mintap),
+      downCount,(Vdev > DB/2) and (previous(tappos) > mintap),
       immediate=true,
       reset=true,
       synchronize=false,
@@ -281,7 +280,7 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{58,4},{58,10}},
+        extent={{-4,4},{-4,10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -319,8 +318,7 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       downAction,
-      wait,
-      true,
+      wait,true,
       immediate=true,
       reset=true,
       synchronize=false,
@@ -330,7 +328,7 @@ package TapChanger
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{2,-6},{2,-12}},
+        extent={{4,-4},{4,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -371,14 +369,14 @@ package TapChanger
         horizontalAlignment=TextAlignment.Right));
     transition(
       upAction,
-      wait,
-      true) annotation (Line(
+      wait,true,immediate=true, reset=true,synchronize=false,priority=1)
+            annotation (Line(
         points={{-50,-80},{-50,-96},{-4,-96},{-4,42}},
         color={175,175,175},
         thickness=0.25,
         smooth=Smooth.Bezier), Text(
         string="%condition",
-        extent={{-6,-6},{-6,-12}},
+        extent={{4,-4},{4,-10}},
         lineColor={95,95,95},
         fontSize=10,
         textStyle={TextStyle.Bold},
@@ -440,10 +438,10 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
 
     TCULState tCULState
       annotation (Placement(transformation(extent={{-2,-2},{18,18}})));
-    Modelica.Blocks.Sources.Sine Sine(
-      amplitude=0.05,
-      freqHz=1/100,
-      offset=1)
+    Modelica.Blocks.Sources.Ramp Ramp(
+      height=-0.2,
+      offset=1.1,
+      duration=500)
       annotation (Placement(transformation(extent={{-62,10},{-42,30}})));
     Modelica.Blocks.MathInteger.Product
                         product(nu=2)
@@ -452,13 +450,14 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
       annotation (Placement(transformation(extent={{74,-2},{94,18}})));
     Modelica.Blocks.Sources.IntegerStep integerStep(offset=2, startTime=2)
       annotation (Placement(transformation(extent={{0,-36},{20,-16}})));
+    Modelica.Blocks.Sources.Sine Sine1(
+      amplitude=0.05,
+      offset=1,
+      freqHz=1/50)
+      annotation (Placement(transformation(extent={{-60,-30},{-40,-10}})));
   equation
-    connect(Sine.y, tCULState.u1) annotation (Line(
+    connect(Ramp.y, tCULState.u1) annotation (Line(
         points={{-41,20},{-16,20},{-16,14},{-4,14}},
-        color={0,0,127},
-        smooth=Smooth.None));
-    connect(Sine.y, tCULState.u2) annotation (Line(
-        points={{-41,20},{-24,20},{-24,2},{-4,2}},
         color={0,0,127},
         smooth=Smooth.None));
     connect(product.y,showValue1. numberPort) annotation (Line(
@@ -472,6 +471,10 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
     connect(integerStep.y, product.u[2]) annotation (Line(
         points={{21,-26},{34,-26},{34,5.9},{48,5.9}},
         color={255,127,0},
+        smooth=Smooth.None));
+    connect(Sine1.y, tCULState.u2) annotation (Line(
+        points={{-39,-20},{-20,-20},{-20,2},{-4,2}},
+        color={0,0,127},
         smooth=Smooth.None));
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
               -100},{100,100}}),      graphics));
