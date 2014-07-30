@@ -214,7 +214,7 @@ package TapChanger
     end if;
 
     Vdev = u1_s - Vref;
-    hold(tappos) = (y - 1)/stepsize; // hold the discrete signals for output
+    hold(previous(tappos)) = (y - 1)/stepsize; // hold the discrete signals for output
     /* Hold and delay the discrete signals for output.
   Not quite clear why the delay but this is required
   for coupling with the EPL/Spot type transformer models. */
@@ -438,6 +438,7 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
   end TCULState;
 
   model Test
+    extends Modelica.Icons.Example;
 
     TCULState tCULState
       annotation (Placement(transformation(extent={{-2,-2},{18,18}})));
@@ -482,5 +483,153 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
     annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
               -100},{100,100}}),      graphics));
   end Test;
-  annotation (uses(Modelica(version="3.2.1")));
+
+  model Test_ObjectStab
+      extends ObjectStab.Base.System;
+      extends Modelica.Icons.UnderConstruction;
+
+    ObjectStab.Network.Bus Bus1 annotation (Placement(transformation(
+          origin={-60,70},
+          extent={{-10,-10},{10,10}},
+          rotation=180)));
+    ObjectStab.Network.Bus Bus2 annotation (Placement(transformation(
+          origin={-20,70},
+          extent={{-10,-10},{10,10}},
+          rotation=180)));
+    ObjectStab.Network.Bus Bus3 annotation (Placement(transformation(
+          origin={-3,30},
+          extent={{-10,-37},{10,37}},
+          rotation=270)));
+    ObjectStab.Network.Bus Bus4 annotation (Placement(transformation(
+          origin={20,70},
+          extent={{-10,-10},{10,10}},
+          rotation=180)));
+    ObjectStab.Network.Bus Bus5 annotation (Placement(transformation(
+          origin={0,-10},
+          extent={{-10,-10},{10,10}},
+          rotation=270)));
+    ObjectStab.Generators.Slack Slack1 annotation (Placement(transformation(
+            extent={{20,60},{40,80}})));
+    ObjectStab.Generators.GovExc6thGen Gen(
+      V0=1.05,
+      Pg0=1,
+      Sbase=200,
+      redeclare ObjectStab.Generators.Controllers.FirstOrderExciter Exc,
+      redeclare ObjectStab.Generators.Controllers.IsoGover Gov) annotation (Placement(
+          transformation(
+          origin={-70,70},
+          extent={{-10,-10},{10,10}},
+          rotation=180)));
+    ObjectStab.Loads.ImpedanceLoad ImpedanceLoad1 annotation (Placement(
+          transformation(
+          origin={0,-20},
+          extent={{-10,-10},{10,10}},
+          rotation=270)));
+    ObjectStab.Network.ShuntCapacitor ShuntCapacitor1(B=0.6) annotation (Placement(
+          transformation(
+          origin={-26,20},
+          extent={{-10,-10},{10,10}},
+          rotation=270)));
+    ObjectStab.Network.OpenedPilink OpenedPilink1 annotation (Placement(
+          transformation(extent={{-10,60},{10,80}})));
+    ObjectStab.Network.Pilink Line1(X=0.2) annotation (Placement(transformation(
+            extent={{-50,60},{-30,80}})));
+    ObjectStab.Network.Pilink Line4(X=0.02, B=0.05) annotation (Placement(
+          transformation(
+          origin={-10,50},
+          extent={{-10,-10},{10,10}},
+          rotation=90)));
+    TestComponents.TCULDis     T1(Controller) annotation (Placement(
+          transformation(
+          origin={0,10},
+          extent={{-10,-10},{10,10}},
+          rotation=270)));
+  equation
+    connect(Bus4.T, Slack1.T) annotation (Line(points={{20,70},{20,70}}));
+    connect(T1.T2, Bus5.T) annotation (Line(points={{-1.77636e-15,0},{0,-10}}));
+    connect(ImpedanceLoad1.T, Bus5.T) annotation (Line(points={{1.77636e-15,-10},
+            {0,-10}}));
+    connect(Line4.T1, Bus3.T) annotation (Line(points={{-10,40},{-10,30},{-3,30}}));
+    connect(Bus3.T, ShuntCapacitor1.T) annotation (Line(points={{-3,30},{-14,30},{
+            -26,30}}));
+    connect(T1.T1, Bus3.T) annotation (Line(points={{1.77636e-15,20},{0,20},{0,30},
+            {-3,30}}));
+    connect(Bus4.T, OpenedPilink1.T2) annotation (Line(points={{20,70},{10,70}}));
+    connect(Line4.T2, Bus2.T) annotation (Line(points={{-10,60},{-20,70}}));
+    connect(OpenedPilink1.T1, Bus2.T) annotation (Line(points={{-10,70},{-20,70}}));
+    connect(Line1.T2, Bus2.T) annotation (Line(points={{-30,70},{-20,70}}));
+    connect(Bus1.T, Line1.T1) annotation (Line(points={{-60,70},{-50,70}}));
+    connect(Gen.T, Bus1.T) annotation (Line(points={{-60,70},{-60,70}}));
+    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
+              -100},{100,100}}), graphics));
+  end Test_ObjectStab;
+
+  package TestComponents
+    extends Modelica.Icons.InternalPackage;
+    model TCULDis
+      "Tap-Changing Under Load (TCUL) transformer with discrete implementation"
+
+      extends ObjectStab.Network.Partials.ImpTransformer;
+
+      parameter ObjectStab.Base.TapRatio n=1 "Transformer Ratio";
+
+      TCULState                                   Controller(n=n) annotation (Placement(
+            transformation(extent={{0,-60},{20,-40}})));
+      ObjectStab.Base.VoltageMeasurement PrimaryVoltage annotation (Placement(
+            transformation(
+            origin={-80,-30},
+            extent={{-10,-10},{10,10}},
+            rotation=270)));
+      ObjectStab.Base.VoltageMeasurement SecondaryVoltage annotation (Placement(
+            transformation(
+            origin={80,-20},
+            extent={{-10,-10},{10,10}},
+            rotation=270)));
+    equation
+      connect(T1, T1) annotation (Line(
+          points={{-100,0},{-100,0}},
+          color={0,0,255}));
+      connect(T1, PrimaryVoltage.T) annotation (Line(
+          points={{-100,0},{-80,0},{-80,-20}},
+          color={0,0,255}));
+      connect(T2, SecondaryVoltage.T) annotation (Line(
+          points={{100,0},{80,0},{80,-10}},
+          color={0,0,255}));
+      connect(PrimaryVoltage.V, Controller.u2) annotation (Line(
+          points={{-80,-30},{-80,-56},{-2,-56}},
+          color={0,0,127}));
+      connect(SecondaryVoltage.V, Controller.u1) annotation (Line(
+          points={{80,-20},{80,-30},{-20,-30},{-20,-44},{-2,-44}},
+          color={0,0,127}));
+      connect(Controller.y, Tr.inPort) annotation (Line(
+          points={{21,-50},{40,-50},{40,-16}},
+          color={0,0,127}));
+      annotation (
+        Icon(coordinateSystem(
+            preserveAspectRatio=false,
+            extent={{-100,-100},{100,100}},
+            grid={2,2}), graphics={
+            Ellipse(extent={{-70,40},{12,-40}}, lineColor={0,0,0}),
+            Ellipse(extent={{-12,40},{70,-40}}, lineColor={0,0,0}),
+            Line(points={{70,0},{100,0}}, color={0,0,0}),
+            Line(points={{-100,0},{-70,0}}, color={0,0,0}),
+            Line(points={{-60,-60},{0,60}}, color={0,0,0}),
+            Polygon(
+              points={{6,72},{-6,60},{4,56},{6,72}},
+              lineColor={0,0,0},
+              fillColor={0,0,0},
+              fillPattern=FillPattern.Solid)}),
+        Documentation(info="Discrete implementation of Tap-Changing Under Load (TCUL) transformer according to
+method D1-D4 using a state-machine implementation of the control system and
+tap changer mechanism. See documentation for 'Controllers.TCULDiscrete' for
+documentation on the control system.
+Note that the tap position of a discrete tap changer is not properly
+initialized by the initial value solver in Dymola version 4.0c.
+This can by manually by adding e.g., the string: Controller(tappos(start=8))
+in the 'Modifiers' field (initializes the tap to position 8).
+"));
+    end TCULDis;
+  end TestComponents;
+
+   annotation (uses(Modelica(version="3.2.1"), ObjectStab(version="1.1 Dev")));
 end TapChanger;
