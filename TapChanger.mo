@@ -2,6 +2,24 @@ within ;
 package TapChanger
   model TCULState
     extends Modelica.Blocks.Interfaces.SI2SO;
+    type MethodType = enumeration(
+        No1 "1: Td = constant, Tm = constant",
+        No2 "2: Td = inverse, Tm = constant",
+        No3 "3: Td = inverse, Tm = inverse",
+        No4 "4: Td = constant + inverse, Tm = constant") "Method type"
+        annotation(Documentation(info="
+Using the parameter the characteristics of the mechanical delay time (Tm)
+and the controlled delay time (Td) the TCUL can be influenced according
+to the table below:
+----------------------------------
+|method|    Td     |    Tm       |
+----------------------------------
+|  1   |  constant |  constant   |
+|  2   |  inverse  |  constant   |
+|  3   |  inverse  |  inverse    |
+|  4   |  both     |  constant   |
+----------------------------------
+"));
     /* Time parameters */
     parameter Modelica.SIunits.Time ActivationTime=3
       "Time from which on the TCUL controller shall be activated (default=0)"
@@ -25,7 +43,7 @@ package TapChanger
         annotation (Dialog(group="Tap settings"));
     parameter Real stepsize=DB/(abs(maxtap)+abs(mintap)) "Step size"
         annotation (Dialog(group="Tap settings"));
-    parameter Integer method(min=1, max=4)=1
+    parameter MethodType method=MethodType.No1
       "Method number (mechanical characteristic)"
         annotation (Dialog(group="Tap settings"));
 
@@ -199,13 +217,13 @@ package TapChanger
       annotation (Placement(transformation(extent={{100,50},{120,70}})));
 
   equation
-    if (method == 1) then
+    if (method == MethodType.No1) then
       Td = Td0;
       Tm = Tm0;
-    elseif (method == 2) then
+    elseif (method == MethodType.No2) then
       Td = Td0*DB/2/max(abs(Vdev), 1e-6);
       Tm = Tm0;
-    elseif (method == 3) then
+    elseif (method == MethodType.No3) then
       Td = Td0*DB/2/max(abs(Vdev), 1e-6);
       Tm = Tm0*DB/2/max(abs(Vdev), 1e-6);
     else
