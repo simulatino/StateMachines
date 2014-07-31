@@ -32,7 +32,7 @@ to the table below:
       annotation (Dialog(group="Time settings"));
 
     /* Tap parameters */
-    parameter Real n=1 "Initial transformer ratio"
+    parameter Modelica.SIunits.PerUnit n=1 "Initial transformer ratio"
         annotation (Dialog(group="Tap settings"));
     parameter Integer mintap=-16 "Minimum tap step"
         annotation (Dialog(group="Tap settings"));
@@ -64,7 +64,7 @@ to the table below:
 
     /* Other variables */
     inner Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
-    Integer tappos_offset(start=abs(mintap)) = integer(tappos+0.5) + abs(mintap)
+    Integer tappos_offset(start=abs(mintap)) = -integer(tappos+0.5) + abs(mintap)
       "Tap step shifted by mintap";
     inner Modelica.SIunits.Time offset(start=0)
       "Temp variable used in the states";
