@@ -65,7 +65,7 @@ to the table below:
 
     /* Other variables */
     inner Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
-    Integer tappos_offset(start=abs(mintap)) = -integer(tappos+0.5) + abs(mintap)
+    Integer tappos_offset(start=abs(mintap)) = -integer(tappos+0.5) + abs(mintap)+1
       "Tap step shifted by mintap";
     inner SI.Time offset(start=0) "Temp variable used in the states";
     SI.Time Td "Delay time before tapping is triggered";
