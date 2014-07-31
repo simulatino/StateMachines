@@ -1,5 +1,8 @@
 within ;
 package TapChanger
+  import SI = Modelica.SIunits;
+  import C = Modelica.Constants;
+
   model TCULState
     extends Modelica.Blocks.Interfaces.SI2SO;
     type MethodType = enumeration(
@@ -21,25 +24,24 @@ to the table below:
 ----------------------------------
 "));
     /* Time parameters */
-    parameter Modelica.SIunits.Time ActivationTime=3
+    parameter SI.Time ActivationTime=3
       "Time from which on the TCUL controller shall be activated (default=0)"
       annotation (Dialog(group="Time settings"));
-    parameter Modelica.SIunits.Duration Tm0=10 "Mechanical Time Delay"
+    parameter SI.Duration Tm0=10 "Mechanical Time Delay"
       annotation (Dialog(group="Time settings"));
-    parameter Modelica.SIunits.Duration Td0=20 "Controller Time Delay 1"
+    parameter SI.Duration Td0=20 "Controller Time Delay 1"
       annotation (Dialog(group="Time settings"));
-    parameter Modelica.SIunits.Duration Td1=20 "Controller Time Delay 2"
+    parameter SI.Duration Td1=20 "Controller Time Delay 2"
       annotation (Dialog(group="Time settings"));
 
     /* Tap parameters */
-    parameter Modelica.SIunits.PerUnit n=1 "Initial transformer ratio"
+    parameter Real n=1 "Initial transformer ratio"
         annotation (Dialog(group="Tap settings"));
     parameter Integer mintap=-16 "Minimum tap step"
         annotation (Dialog(group="Tap settings"));
     parameter Integer maxtap=16 "Maximum tap step"
         annotation (Dialog(group="Tap settings"));
-    parameter Modelica.SIunits.PerUnit DB=0.02
-      "TCUL Voltage Deadband (double-sided)"
+    parameter SI.PerUnit DB=0.02 "TCUL Voltage Deadband (double-sided)"
         annotation (Dialog(group="Tap settings"));
     parameter Real stepsize=DB/(abs(maxtap)+abs(mintap)) "Step size"
         annotation (Dialog(group="Tap settings"));
@@ -48,29 +50,27 @@ to the table below:
         annotation (Dialog(group="Tap settings"));
 
     /* Voltage parameters */
-    parameter Modelica.SIunits.PerUnit Vref=1 "TCUL Voltage Reference"
+    parameter SI.PerUnit Vref=1 "TCUL Voltage Reference"
         annotation (Dialog(group="Voltage settings"));
-    parameter Modelica.SIunits.PerUnit Vblock=0.82 "Tap locking voltage"
+    parameter SI.PerUnit Vblock=0.82 "Tap locking voltage"
         annotation (Dialog(group="Voltage settings"));
 
     /* Sampling settings */
-    parameter Modelica.SIunits.Time SamplePeriod=1
-      "Sample period for the input signals"
+    parameter SI.Time SamplePeriod=1 "Sample period for the input signals"
       annotation (Dialog(tab="Sampling settings"));
     Clock clk = Clock(SamplePeriod) "Definition of a global Clock";
-    inner Modelica.SIunits.Time time_s = sample(time, clk) "Sampled time";
-    Modelica.SIunits.PerUnit u1_s = sample(u1, clk) "Sampled input signal u1";
-    Modelica.SIunits.PerUnit u2_s = sample(u2, clk) "Sampled input signal u1";
+    inner SI.Time time_s = sample(time, clk) "Sampled time";
+    SI.PerUnit u1_s = sample(u1, clk) "Sampled input signal u1";
+    SI.PerUnit u2_s = sample(u2, clk) "Sampled input signal u1";
 
     /* Other variables */
     inner Real tappos(start=(n - 1)/stepsize) "Current tap step [number]";
     Integer tappos_offset(start=abs(mintap)) = -integer(tappos+0.5) + abs(mintap)
       "Tap step shifted by mintap";
-    inner Modelica.SIunits.Time offset(start=0)
-      "Temp variable used in the states";
-    Modelica.SIunits.Time Td "Delay time before tapping is triggered";
-    Modelica.SIunits.Time Tm "Delay time for the mechanical tapping";
-    Modelica.SIunits.PerUnit Vdev "Voltage deviation";
+    inner SI.Time offset(start=0) "Temp variable used in the states";
+    SI.Time Td "Delay time before tapping is triggered";
+    SI.Time Tm "Delay time for the mechanical tapping";
+    SI.PerUnit Vdev "Voltage deviation";
     Boolean blocked=u2_s < Vblock "Tap locked ?";
 
     model Wait
@@ -110,8 +110,8 @@ to the table below:
     end Delay;
 
     model DownCount
-       outer output Modelica.SIunits.Time offset;
-       outer Modelica.SIunits.Time time_s;
+       outer output SI.Time offset;
+       outer SI.Time time_s;
        Integer tmp(start=0);
     equation
       tmp = previous(tmp)+1;
@@ -165,8 +165,8 @@ to the table below:
     UpAction upAction
       annotation (Placement(transformation(extent={{-72,-78},{-28,-62}})));
     model UpCount
-      outer output Modelica.SIunits.Time offset;
-      outer Modelica.SIunits.Time time_s;
+      outer output SI.Time offset;
+      outer SI.Time time_s;
       Integer tmp(start=0);
     equation
        tmp = previous(tmp) + 1;
@@ -221,13 +221,13 @@ to the table below:
       Td = Td0;
       Tm = Tm0;
     elseif (method == MethodType.No2) then
-      Td = Td0*DB/2/max(abs(Vdev), 1e-6);
+      Td = Td0*DB/2/max(abs(Vdev), C.eps);
       Tm = Tm0;
     elseif (method == MethodType.No3) then
-      Td = Td0*DB/2/max(abs(Vdev), 1e-6);
-      Tm = Tm0*DB/2/max(abs(Vdev), 1e-6);
+      Td = Td0*DB/2/max(abs(Vdev), C.eps);
+      Tm = Tm0*DB/2/max(abs(Vdev), C.eps);
     else
-      Td = Td1 + Td0*DB/2/max(abs(Vdev), 1e-6);
+      Td = Td1 + Td0*DB/2/max(abs(Vdev), C.eps);
       Tm = Tm0;
     end if;
 
