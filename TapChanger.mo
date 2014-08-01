@@ -118,7 +118,7 @@ to the table below:
       if tmp == 1 then
         /* we need to substract the interval time 
      because of delayed trigger */
-        offset = time_s - interval(offset);
+        offset = time_s - 2*interval(offset);
       else
         offset = previous(offset);
       end if
@@ -171,7 +171,7 @@ to the table below:
     equation
        tmp = previous(tmp) + 1;
        if tmp == 1 then
-         offset = time_s- interval(offset);
+         offset = time_s - 2*interval(offset);
        else
          offset = previous(offset);
        end if
