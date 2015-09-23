@@ -116,7 +116,7 @@ to the table below:
     equation
       tmp = previous(tmp)+1;
       if tmp == 1 then
-        /* we need to substract the interval time 
+        /* we need to substract the interval time
      because of delayed trigger */
         offset = time_s - 2*interval(offset);
       else
@@ -422,14 +422,13 @@ to the table below:
         thickness=0.25,
         smooth=Smooth.Bezier,
         arrow={Arrow.Filled,Arrow.None}));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{100,100}}), graphics), Documentation(info="Discrete implementation of Tap-Changing Under Load (TCUL) control system
+    annotation ( Documentation(info="Discrete implementation of Tap-Changing Under Load (TCUL) control system
 according to method D1-D4 in [1] using a state-machine implementation of
 the control system and tap changer mechanism.
 
 Ideally the variable 'tappos' should be initialized to give a voltage
-deviation within the deadband at the start of the simulatation. 
-Failure to do so may result in convergence problems with the initial 
+deviation within the deadband at the start of the simulatation.
+Failure to do so may result in convergence problems with the initial
 value solver.
 
 Using the parameter the characteristics of the mechanical delay time (Tm)
@@ -498,8 +497,6 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
         points={{-39,-20},{-20,-20},{-20,2},{-4,2}},
         color={0,0,127},
         smooth=Smooth.None));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{100,100}}),      graphics));
   end Test;
 
   model Test_ObjectStab
@@ -578,8 +575,6 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
     connect(Line1.T2, Bus2.T) annotation (Line(points={{-30,70},{-20,70}}));
     connect(Bus1.T, Line1.T1) annotation (Line(points={{-60,70},{-50,70}}));
     connect(Gen.T, Bus1.T) annotation (Line(points={{-60,70},{-60,70}}));
-    annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
-              -100},{100,100}}), graphics));
   end Test_ObjectStab;
 
   package TestComponents
