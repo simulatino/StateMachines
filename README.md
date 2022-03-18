@@ -11,7 +11,7 @@ semantics. Some documentation was taken from the original ObjectStab library
 
 ## License
 
-The libray is licensed under [GPLv3](blob/master/LICENSE)
+This Source Code Form is subject to the terms of the [Mozilla Public License, v. 2.0](LICENSE).
 
 ## Development and contribution
 
