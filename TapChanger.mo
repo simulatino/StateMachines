@@ -1,6 +1,6 @@
 within ;
 package TapChanger
-  import SI = Modelica.SIunits;
+  import Modelica.Units.SI;
   import C = Modelica.Constants;
 
   model TCULState
@@ -474,8 +474,7 @@ Voltage Stability, Security and Control,  Davos, Switzerland, 1994.
     Modelica.Blocks.Sources.Sine Sine1(
       amplitude=0.05,
       offset=1,
-      freqHz=1/50)
-      annotation (Placement(transformation(extent={{-60,-30},{-40,-10}})));
+      f=1/50) annotation (Placement(transformation(extent={{-60,-30},{-40,-10}})));
   equation
     connect(Ramp.y, tCULState.u1) annotation (Line(
         points={{-41,20},{-16,20},{-16,14},{-4,14}},
@@ -644,5 +643,5 @@ in the 'Modifiers' field (initializes the tap to position 8).
     end TCULDis;
   end TestComponents;
 
-   annotation (uses(Modelica(version="3.2.1"), ObjectStab(version="1.1 Dev")));
+   annotation (uses(ObjectStab(version="2.0.0"), Modelica(version="4.0.0")));
 end TapChanger;
